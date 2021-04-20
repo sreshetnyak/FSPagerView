@@ -222,7 +222,11 @@ open class FSPagerView: UIView,UICollectionViewDataSource,UICollectionViewDelega
     internal weak var collectionView: FSPagerCollectionView!
     internal weak var contentView: UIView!
     internal var timer: Timer?
-    internal var numberOfItems: Int = 0
+    
+    internal var numberOfItems: Int {
+        return self.dataSource?.numberOfItems(in: self) ?? 0
+    }
+    
     internal var numberOfSections: Int = 0
     
     fileprivate var dequeingSection = 0
@@ -288,23 +292,6 @@ open class FSPagerView: UIView,UICollectionViewDataSource,UICollectionViewDelega
             self.cancelTimer()
         }
     }
-    
-    #if TARGET_INTERFACE_BUILDER
-    
-    open override func prepareForInterfaceBuilder() {
-        super.prepareForInterfaceBuilder()
-        self.contentView.layer.borderWidth = 1
-        self.contentView.layer.cornerRadius = 5
-        self.contentView.layer.masksToBounds = true
-        self.contentView.frame = self.bounds
-        let label = UILabel(frame: self.contentView.bounds)
-        label.textAlignment = .center
-        label.font = UIFont.boldSystemFont(ofSize: 25)
-        label.text = "FSPagerView"
-        self.contentView.addSubview(label)
-    }
-    
-    #endif
 
     deinit {
         self.collectionView.dataSource = nil
@@ -314,13 +301,14 @@ open class FSPagerView: UIView,UICollectionViewDataSource,UICollectionViewDelega
     // MARK: - UICollectionViewDataSource
     
     public func numberOfSections(in collectionView: UICollectionView) -> Int {
-        guard let dataSource = self.dataSource else {
+        guard self.dataSource != nil else {
             return 1
         }
-        self.numberOfItems = dataSource.numberOfItems(in: self)
+        
         guard self.numberOfItems > 0 else {
-            return 0;
+            return 0
         }
+        
         self.numberOfSections = self.isInfinite && (self.numberOfItems > 1 || !self.removesInfiniteLoopForSingleItem) ? Int(Int16.max)/self.numberOfItems : 1
         return self.numberOfSections
     }
@@ -511,9 +499,7 @@ open class FSPagerView: UIView,UICollectionViewDataSource,UICollectionViewDelega
     ///   - animated: Specify true to animate the scrolling behavior or false to adjust the pager view’s visible content immediately.
     @objc(scrollToItemAtIndex:animated:)
     open func scrollToItem(at index: Int, animated: Bool) {
-        guard index < self.numberOfItems else {
-            fatalError("index \(index) is out of range [0...\(self.numberOfItems-1)]")
-        }
+        guard index < self.numberOfItems else { return }
         let indexPath = { () -> IndexPath in
             if let indexPath = self.possibleTargetingIndexPath, indexPath.item == index {
                 defer {
@@ -597,7 +583,7 @@ open class FSPagerView: UIView,UICollectionViewDataSource,UICollectionViewDelega
         guard self.timer != nil else {
             return
         }
-        self.timer!.invalidate()
+        self.timer?.invalidate()
         self.timer = nil
     }
     
